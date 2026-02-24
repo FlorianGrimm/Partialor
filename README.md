@@ -1,0 +1,2 @@
+# Partialor
+SourceGen Partialor
