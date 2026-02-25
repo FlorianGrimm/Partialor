@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="sample/Sample1/Sample1.csproj" />
+  <Project Path="src/Partialor.Abstractions/Partialor.Abstractions.csproj" />
+  <Project Path="src/Partialor/Partialor.csproj" />
+  <Project Path="test/Partialor.Abstractions.Tests/Partialor.Abstractions.Tests.csproj" />
+</Solution>
