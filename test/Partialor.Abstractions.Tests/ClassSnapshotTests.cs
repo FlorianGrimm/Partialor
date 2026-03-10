@@ -74,4 +74,34 @@ public class ClassSnapshotTests {
         var settings = Settings();
         return Verify(runResult, settings).UseDirectory("Results/Classes");
     }
+
+     [Test]
+    public Task BaseClass() {
+        var source = """
+        using System;
+        using Partialor;
+
+        namespace MySpace;
+
+        [Partial()]
+        public class ModelA
+        {
+            public string Name { get; set; }
+
+        }
+
+        [Partial()]
+        public class ModelB : ModelA
+        {
+            public int Age { get; set; }
+        }
+        """;
+
+        var runResult = TestHelper.GeneratorDriver(source, typeof(Partialor.PartialAttribute).Assembly)
+            .GetRunResult()
+            .GetFirstResult()
+            ;
+        var settings = Settings();
+        return Verify(runResult, settings).UseDirectory("Results/Classes");
+    }
 }

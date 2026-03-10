@@ -14,9 +14,9 @@ public class PartialorIncrementalSourceGenerator : IIncrementalGenerator {
         var candidates = context.SyntaxProvider.ForAttributeWithMetadataName(
             fullyQualifiedMetadataName: Partialor.Names.PartialAttribute,
             predicate: static (n, _) => n.IsKind(SyntaxKind.ClassDeclaration)
-                                 || n.IsKind(SyntaxKind.StructDeclaration)
-                                 || n.IsKind(SyntaxKind.RecordDeclaration)
-                                 || n.IsKind(SyntaxKind.RecordStructDeclaration),
+                || n.IsKind(SyntaxKind.StructDeclaration)
+                || n.IsKind(SyntaxKind.RecordDeclaration)
+                || n.IsKind(SyntaxKind.RecordStructDeclaration),
             transform: SemanticTransform)
             .Where(static n => n is not null);
 
@@ -490,7 +490,6 @@ public class PartialorIncrementalSourceGenerator : IIncrementalGenerator {
             _ => null
         };
 #endif
-        //ClassDeclarationSyntax val =>
         var partialType = (ClassDeclarationSyntax)SyntaxFactory
             .ClassDeclaration(namePartial)
             .WithDerived(derivedTypeSyntax)
@@ -606,37 +605,18 @@ public class PartialorIncrementalSourceGenerator : IIncrementalGenerator {
                                 .WithTokens(
                                     SyntaxFactory.TokenList(
                                         SyntaxFactory.Token(SyntaxKind.CloseBraceToken)))))));
-        var namespaceDeclarationSyntax = ExtensionHelpers.GetNamespace(nodeTypeDeclarationSyntax);
-        List<MemberDeclarationSyntax> listMemberDeclarationSyntax = [
-            partialType,
-            partialTypeExtension
-            ];
-        CompilationUnitSyntax nextRoot = SyntaxFactory.CompilationUnit();
-        if (namespaceDeclarationSyntax is { }) {
-            nextRoot = SyntaxFactory.CompilationUnit()
-                .WithMembers(
-                    SyntaxFactory.SingletonList<MemberDeclarationSyntax>(
-                        namespaceDeclarationSyntax
-                        .WithMembers(
-                            SyntaxFactory.List<MemberDeclarationSyntax>(
-                                new MemberDeclarationSyntax[]{
-                                    partialType,
-                                    partialTypeExtension
-                                }))))
-                .NormalizeWhitespace();
-        } else {
-            nextRoot = SyntaxFactory.CompilationUnit()
-                .WithMembers(
-                    SyntaxFactory.List<MemberDeclarationSyntax>(
-                        new MemberDeclarationSyntax[]{
-                            partialType,
-                            partialTypeExtension
-                        }))
-                .NormalizeWhitespace();
-        }
-        var newTree = SyntaxFactory.SyntaxTree(nextRoot, root.SyntaxTree.Options);
-        var sourceText = newTree.GetText().ToString();
 
+        var resultRoot = ExtensionHelpers.CloneNamespace(
+            nodeTypeDeclarationSyntax,
+            SyntaxFactory.List<MemberDeclarationSyntax>(
+                new MemberDeclarationSyntax[]{
+                    (MemberDeclarationSyntax)partialType.WithNullableEnableDirective(),
+                    partialTypeExtension
+                }));
+        var newTree = SyntaxFactory.SyntaxTree(
+            root: resultRoot.NormalizeWhitespace(),
+            options: root.SyntaxTree.Options);
+        var sourceText = newTree.GetText().ToString();
         spc.AddSource(namePartial + ".g.cs", SourceCodeText.Disclaimer + sourceText);
     }
 }

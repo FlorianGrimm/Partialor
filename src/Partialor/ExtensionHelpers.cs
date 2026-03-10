@@ -491,10 +491,76 @@ public static class ExtensionHelpers {
     /// TODO
     /// </summary>
     /// <param name="typeDecl"></param>
+    /// <param name="newNodes"></param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    public static CompilationUnitSyntax CloneNamespace(
+        TypeDeclarationSyntax typeDecl,
+        SyntaxList<MemberDeclarationSyntax> newNodes
+        ) {
+        if (typeDecl == null) {
+            throw new ArgumentNullException(nameof(typeDecl));
+        }
+
+        BaseNamespaceDeclarationSyntax? resultNS = null;
+        SyntaxNode? currentNode = typeDecl.Parent;
+        List<IdentifierNameSyntax> list = new();
+        while (currentNode is not null) {
+            if (currentNode is NamespaceDeclarationSyntax ns) {
+                var innerNS = resultNS;
+                var outerNS = SyntaxFactory.NamespaceDeclaration(ns.Name)
+                    .WithUsings(ns.Usings);
+                if (innerNS is null) {
+                    resultNS = outerNS
+                        .WithMembers(newNodes);
+                } else {
+                    resultNS = outerNS
+                        .WithMembers(SyntaxFactory.SingletonList<MemberDeclarationSyntax>(innerNS));
+                }
+            } else if (currentNode is FileScopedNamespaceDeclarationSyntax fsNs) {
+                var innerNS = resultNS;
+                var outerNS = SyntaxFactory.NamespaceDeclaration(fsNs.Name)
+                    .WithUsings(fsNs.Usings);
+                if (resultNS is null) {
+                    resultNS = outerNS
+                        .WithMembers(newNodes);
+                } else {
+                    resultNS = outerNS
+                        .WithMembers(SyntaxFactory.SingletonList<MemberDeclarationSyntax>(resultNS));
+                }
+            } else if (currentNode is CompilationUnitSyntax compilationUnitSyntax) {
+                var resultCU = SyntaxFactory.CompilationUnit()
+                    .WithUsings(compilationUnitSyntax.Usings);
+                if (resultNS is null) {
+                    resultCU = resultCU.WithMembers(newNodes);
+                } else {
+                    resultCU = resultCU.WithMembers(SyntaxFactory.SingletonList<MemberDeclarationSyntax>(resultNS));
+                }
+                return resultCU;
+            }
+            currentNode = currentNode.Parent;
+        }
+
+        {
+            var resultCU = SyntaxFactory.CompilationUnit();
+            if (resultNS is null) {
+                resultCU = resultCU.WithMembers(newNodes);
+            } else {
+                resultCU = resultCU.WithMembers(SyntaxFactory.SingletonList<MemberDeclarationSyntax>(resultNS));
+            }
+            return resultCU;
+        }
+
+    }
+
+    /// <summary>
+    /// TODO
+    /// </summary>
+    /// <param name="typeDecl"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentNullException"></exception>
     public static NamespaceDeclarationSyntax? GetNamespace(TypeDeclarationSyntax typeDecl) {
-        if (typeDecl == null) { 
+        if (typeDecl == null) {
             throw new ArgumentNullException(nameof(typeDecl));
         }
 
@@ -536,84 +602,4 @@ public static class ExtensionHelpers {
         }
     }
 
-#if false
-SyntaxFactory.CompilationUnit()
-.WithMembers(
-    SyntaxFactory.SingletonList<MemberDeclarationSyntax>(
-        SyntaxFactory.NamespaceDeclaration(
-            SyntaxFactory.IdentifierName("ABC"))
-        .WithMembers(
-            SyntaxFactory.SingletonList<MemberDeclarationSyntax>(
-                SyntaxFactory.ClassDeclaration("x")))))
-.NormalizeWhitespace()
-
-SyntaxFactory.CompilationUnit()
-.WithMembers(
-    SyntaxFactory.SingletonList<MemberDeclarationSyntax>(
-        SyntaxFactory.NamespaceDeclaration(
-            SyntaxFactory.QualifiedName(
-                SyntaxFactory.IdentifierName("ABC"),
-                SyntaxFactory.IdentifierName("DEF")))
-        .WithMembers(
-            SyntaxFactory.SingletonList<MemberDeclarationSyntax>(
-                SyntaxFactory.ClassDeclaration("x")))))
-.NormalizeWhitespace()
-
-SyntaxFactory.CompilationUnit()
-.WithMembers(
-    SyntaxFactory.SingletonList<MemberDeclarationSyntax>(
-        SyntaxFactory.NamespaceDeclaration(
-            SyntaxFactory.QualifiedName(
-                SyntaxFactory.QualifiedName(
-                    SyntaxFactory.IdentifierName("ABC"),
-                    SyntaxFactory.IdentifierName("DEF")),
-                SyntaxFactory.IdentifierName("GHI")))
-        .WithMembers(
-            SyntaxFactory.SingletonList<MemberDeclarationSyntax>(
-                SyntaxFactory.ClassDeclaration("x")))))
-.NormalizeWhitespace()
-SyntaxFactory.CompilationUnit()
-.WithMembers(
-    SyntaxFactory.SingletonList<MemberDeclarationSyntax>(
-        SyntaxFactory.NamespaceDeclaration(
-            SyntaxFactory.QualifiedName(
-                SyntaxFactory.QualifiedName(
-                    SyntaxFactory.QualifiedName(
-                        SyntaxFactory.IdentifierName("ABC"),
-                        SyntaxFactory.IdentifierName("DEF")),
-                    SyntaxFactory.IdentifierName("GHI")),
-                SyntaxFactory.IdentifierName("JKL")))
-        .WithMembers(
-            SyntaxFactory.SingletonList<MemberDeclarationSyntax>(
-                SyntaxFactory.ClassDeclaration("x")))))
-.NormalizeWhitespace()
-
-SyntaxFactory.CompilationUnit()
-.WithMembers(
-    SyntaxFactory.List<MemberDeclarationSyntax>(
-        new MemberDeclarationSyntax[]{
-            SyntaxFactory.NamespaceDeclaration(
-                SyntaxFactory.QualifiedName(
-                    SyntaxFactory.QualifiedName(
-                        SyntaxFactory.QualifiedName(
-                            SyntaxFactory.IdentifierName("ABC"),
-                            SyntaxFactory.IdentifierName("DEF")),
-                        SyntaxFactory.IdentifierName("GHI")),
-                    SyntaxFactory.IdentifierName("JKL")))
-            .WithMembers(
-                SyntaxFactory.SingletonList<MemberDeclarationSyntax>(
-                    SyntaxFactory.ClassDeclaration("x"))),
-            SyntaxFactory.NamespaceDeclaration(
-                SyntaxFactory.QualifiedName(
-                    SyntaxFactory.QualifiedName(
-                        SyntaxFactory.QualifiedName(
-                            SyntaxFactory.IdentifierName("ABC"),
-                            SyntaxFactory.IdentifierName("DEF")),
-                        SyntaxFactory.IdentifierName("GHI")),
-                    SyntaxFactory.IdentifierName("JKL")))
-            .WithMembers(
-                SyntaxFactory.SingletonList<MemberDeclarationSyntax>(
-                    SyntaxFactory.ClassDeclaration("x")))}))
-.NormalizeWhitespace()
-#endif
 }
